@@ -226,7 +226,6 @@ function readStory(storyId, ignore) {
   $.getJSON('/api/read/' + storyId, function(data) {
     if (data.success == false) {
       if (data.callback == "/api/login" ) { window.location = "/login" }
-       window.location = '/';
     }
     if (data.content.last_update == false) {
       var published = "No date";
@@ -238,7 +237,7 @@ function readStory(storyId, ignore) {
     var feedId = data.content.feed_id;
     var story = getStoryTemplate();
 
-    story.getElementsByClassName("story-link")[0].href = data.content.link;
+    story.getElementsByClassName("story-link")[0].href = data.content.url;
     story.getElementsByClassName("story-read-toggle")[0].onclick = 'unreadStory("' + storyId + '")';
     story.getElementsByClassName("story-read-toggle")[0].setAttribute("onclick", 'unreadStory("' + storyId + '")');
     story.getElementsByClassName("story-read-toggle")[0].innerHTML = 'Mark as unread';

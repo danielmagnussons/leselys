@@ -51,7 +51,7 @@ class Retriever(threading.Thread):
 
         for entry in self.data:
             title = entry['title']
-            link = entry['link']
+            url = entry['link']
             try:
                 description = entry['content'][0]['value']
             except KeyError:
@@ -69,7 +69,7 @@ class Retriever(threading.Thread):
 
             storage.add_story({
                 'title': title,
-                'link': link,
+                'url': url,
                 'description': description,
                 'published': published,
                 'last_update': last_update,
