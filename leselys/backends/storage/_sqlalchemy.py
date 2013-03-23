@@ -3,6 +3,8 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 
+from sqlalchemy.pool import QueuePool
+
 from sqlalchemy import Column, String, Integer
 from sqlalchemy import Boolean, ForeignKey, PickleType
 
@@ -64,21 +66,17 @@ class Sqlalchemy(Storage):
             raise Exception('SQLAlchemy backend need uri option')
         self.uri = kwargs['uri']
         self.engine = create_engine(self.uri, echo=False, convert_unicode=True)
-        self.engine.pool_size = 1
-        self.engine.max_overflow = 1
-        self.engine.pool_timeout = 60
+
         Base.metadata.create_all(self.engine)
 
-        self.session = scoped_session(sessionmaker(autocommit=False,
-                                        autoflush=False,
-                                        bind=self.engine))
+        self.session = scoped_session(sessionmaker(bind=self.engine, autoflush=False))
 
         Base.query = self.session.query_property()
 
     def get_setting(self, key):
         r = self.session.query(Setting.value).filter_by(key=key).first()
         if r is None:
-            return False
+            return []
         else:
             return r[0]
 
@@ -126,6 +124,7 @@ class Sqlalchemy(Storage):
         return res
 
     def get_feed_by_title(self, title):
+        title = unicode(title)
         feed = self.session.query(Feed).filter(Feed.title == title).first()
         if feed:
             feed = {'title': feed.title,
@@ -154,7 +153,10 @@ class Sqlalchemy(Storage):
         return str(feed.id)
 
     def remove_feed(self, feed_id):
+        stories = self.session.query(Story).join(Feed).filter(Story.feed_id == feed_id)
         feed = self.session.query(Feed).filter(Feed.id == feed_id).first()
+        for story in stories:
+            self.session.delete(story)
         self.session.delete(feed)
         self.session.commit()
 
@@ -177,7 +179,6 @@ class Sqlalchemy(Storage):
         self.session.commit()
 
     def get_stories(self, feed_id):
-        print(feed_id)
         stories = self.session.query(Story).join(Feed).filter(Feed.id == feed_id).all()
         if stories:
             res = []
